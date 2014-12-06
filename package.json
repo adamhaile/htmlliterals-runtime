@@ -1,0 +1,23 @@
+{
+  "name": "htmlliterals-runtime",
+  "version": "0.0.0",
+  "description": "Javascript pre-processor that adds an HTML literal syntax to javascript - requires htmlliterals-runtime to execute generated code",
+  "main": "dist/htmlliterals-runtime.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript",
+    "html",
+    "template",
+    "templating"
+  ],
+  "author": "Adam Haile",
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^3.8.10",
+    "gulp-concat": "^2.4.2",
+    "gulp-rename": "^1.2.0",
+    "gulp-uglify": "^1.0.1"
+  }
+}
