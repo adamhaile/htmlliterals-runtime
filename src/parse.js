@@ -11,15 +11,9 @@ define('parse', [], function () {
             "dt": "dl",
             "head": "html",
             "body": "html"
-        },
-        cache = {};
+        };
 
-    return {
-        parse: parse,
-        cachedParse: cachedParse
-    };
-
-    function parse(html) {
+    return function parse(html) {
         var container = document.createElement(containerElement(html)),
             len,
             frag;
@@ -47,16 +41,5 @@ define('parse', [], function () {
     function containerElement(html) {
         var m = matchOpenTag.exec(html);
         return m && containerElements[m[1].toLowerCase()] || "div";
-    }
-
-    function cachedParse(id, html) {
-        var cached = cache[id];
-
-        if (cached === undefined) {
-            cached = parse(html);
-            cache[id] = cached;
-        }
-
-        return cached.cloneNode(true);
     }
 });

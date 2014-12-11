@@ -1,5 +1,5 @@
 // internal cross-browser library of required DOM functions
-define('lib', [], function () {
+define('domlib', [], function () {
     return {
         addEventListener: function addEventListener(node, event, fn) {
             node.addEventListener(event, fn, false);
