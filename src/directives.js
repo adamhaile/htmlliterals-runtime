@@ -1,1 +1,0 @@
-define('directives', [], function () { return {}; });

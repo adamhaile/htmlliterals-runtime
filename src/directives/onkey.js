@@ -1,5 +1,5 @@
-define('directives.onkey', ['directives', 'domlib'], function (directives, domlib) {
-    directives.onkey = function (node) {
+define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
+    Shell.addDirective('onkey', function (node) {
         var keyCode,
             event,
             fn;
@@ -28,7 +28,7 @@ define('directives.onkey', ['directives', 'domlib'], function (directives, domli
             if (e.keyCode === keyCode) fn();
             return true;
         }
-    };
+    });
 
     var keyCodes = {
         backspace:  8,

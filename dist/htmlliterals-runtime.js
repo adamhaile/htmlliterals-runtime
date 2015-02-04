@@ -24,8 +24,6 @@
 })(function (define) {
     "use strict";
 
-define('directives', [], function () { return {}; });
-
 // internal cross-browser library of required DOM functions
 define('domlib', [], function () {
     return {
@@ -112,7 +110,7 @@ define('cachedParse', ['parse'], function (parse) {
     }
 })
 
-define('Shell', ['directives'], function (directives) {
+define('Shell', [], function () {
     function Shell(node) {
         if (node.nodeType === undefined)
             throw new Error("Shell can only wrap a DOM node.  Value ``" + node + "'' is not a DOM node.")
@@ -120,19 +118,19 @@ define('Shell', ['directives'], function (directives) {
     }
 
     Shell.prototype = {
-        childNodes: function children(indices, fn) {
-            var childNodes = this.node.childNodes,
+        childNodes: function childNodes(indices, fn) {
+            var children = this.node.childNodes,
                 len = indices.length,
                 childShells = new Array(len),
                 i, child;
 
-            if (childNodes === undefined)
+            if (children === undefined)
                 throw new Error("Shell.childNodes can only be applied to a node with a \n"
                     + ".childNodes collection.  Node ``" + this.node + "'' does not have one. \n"
                     + "Perhaps you applied it to the wrong node?");
 
             for (i = 0; i < len; i++) {
-                child = childNodes[indices[i]];
+                child = children[indices[i]];
                 if (!child)
                     throw new Error("Node ``" + this.node + "'' does not have a child at index " + i + ".");
 
@@ -144,28 +142,34 @@ define('Shell', ['directives'], function (directives) {
             return this;
         },
 
-        directive: function directive(name, values) {
-            var fn = directives[name];
-
-            if (typeof fn !== 'function')
-                throw new Error("No directive registered with name: " + name);
-
-            values(fn(this.node));
-
-            return this;
-        },
-
         property: function property(setter) {
             setter(this.node);
             return this;
         }
     };
 
+    Shell.addDirective = function addDirective(name, fn) {
+        Shell.prototype[name] = function directive(values) {
+            Shell.execDirective(fn, this.node, values);
+            return this;
+        };
+    };
+
+    Shell.execDirective = function execDirective(fn, node, values) {
+        values(fn(node));
+    };
+
+    Shell.cleanup = function (node, fn) {
+        // nothing right now -- this is primarily a hook for S.cleanup
+        // will consider a non-S design, like perhaps adding a .cleanup()
+        // closure to the node.
+    };
+
     return Shell;
 });
 
-define('directives.class', ['directives', 'domlib'], function (directives, domlib) {
-    directives.class = function (node) {
+define('directives.class', ['Shell', 'domlib'], function (Shell, domlib) {
+    Shell.addDirective('class', function (node) {
         if (node.className === undefined)
             throw new Error("@class can only be applied to an element that accepts class names. \n"
                 + "Element ``" + node + "'' does not. Perhaps you applied it to the wrong node?");
@@ -184,21 +188,22 @@ define('directives.class', ['directives', 'domlib'], function (directives, domli
                 if (off && !hasOff) domlib.classListAdd(node, off);
             }
         };
-    };
+    });
 });
 
-define('directives.focus', ['directives'], function (directives) {
-    directives.focus = function focus(node) {
+define('directives.focus', ['Shell'], function (Shell) {
+    Shell.addDirective('focus', function focus(node) {
         return function focus(flag) {
             flag ? node.focus() : node.blur();
         };
-    };
+    });
 });
 
-define('directives.insert', ['directives'], function (directives) {
-    directives.insert = function(node) {
+define('directives.insert', ['Shell'], function (Shell) {
+    Shell.addDirective('insert', function(node) {
         var parent,
-            start;
+            start,
+            cursor;
 
         return function (value) {
             parent = node.parentNode;
@@ -213,10 +218,14 @@ define('directives.insert', ['directives'], function (directives) {
                         + "of the original node.  The DOM has been modified such that this is \n"
                         + "no longer the case.");
 
-                clear(start, node);
+                //clear(start, node);
             } else start = marker(node);
 
+            cursor = start;
+
             insert(value);
+
+            clear(cursor, node);
         };
 
         // value ::
@@ -225,14 +234,25 @@ define('directives.insert', ['directives'], function (directives) {
         //   node
         //   array of value
         function insert(value) {
+            var next = cursor.nextSibling;
+
             if (value === null || value === undefined) {
                 // nothing to insert
             } else if (value.nodeType /* instanceof Node */) {
-                parent.insertBefore(value, node);
+                if (next !== value) {
+                    parent.insertBefore(value, next);
+                }
+                cursor = value;
             } else if (Array.isArray(value)) {
                 insertArray(value);
             } else {
-                parent.insertBefore(document.createTextNode(value.toString()), node);
+                value = value.toString();
+
+                if (next.nodeType !== 3 || next.data !== value) {
+                    cursor = parent.insertBefore(document.createTextNode(value), next);
+                } else {
+                    cursor = next;
+                }
             }
         }
 
@@ -263,11 +283,11 @@ define('directives.insert', ['directives'], function (directives) {
         function marker(el) {
             return parent.insertBefore(document.createTextNode(""), el);
         }
-    };
+    });
 });
 
-define('directives.onkey', ['directives', 'domlib'], function (directives, domlib) {
-    directives.onkey = function (node) {
+define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
+    Shell.addDirective('onkey', function (node) {
         var keyCode,
             event,
             fn;
@@ -296,7 +316,7 @@ define('directives.onkey', ['directives', 'domlib'], function (directives, domli
             if (e.keyCode === keyCode) fn();
             return true;
         }
-    };
+    });
 
     var keyCodes = {
         backspace:  8,
@@ -392,12 +412,11 @@ define('directives.onkey', ['directives', 'domlib'], function (directives, domli
     };
 });
 
-define('export', ['parse', 'cachedParse', 'Shell', 'directives', 'domlib'], function (parse, cachedParse, Shell, directives, domlib) {
+define('export', ['parse', 'cachedParse', 'Shell', 'domlib'], function (parse, cachedParse, Shell, domlib) {
     return {
         parse: parse,
         cachedParse: cachedParse,
         Shell: Shell,
-        directives: directives,
         domlib: domlib
     };
 });

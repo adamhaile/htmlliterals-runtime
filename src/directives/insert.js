@@ -1,7 +1,8 @@
-define('directives.insert', ['directives'], function (directives) {
-    directives.insert = function(node) {
+define('directives.insert', ['Shell'], function (Shell) {
+    Shell.addDirective('insert', function(node) {
         var parent,
-            start;
+            start,
+            cursor;
 
         return function (value) {
             parent = node.parentNode;
@@ -16,10 +17,14 @@ define('directives.insert', ['directives'], function (directives) {
                         + "of the original node.  The DOM has been modified such that this is \n"
                         + "no longer the case.");
 
-                clear(start, node);
+                //clear(start, node);
             } else start = marker(node);
 
+            cursor = start;
+
             insert(value);
+
+            clear(cursor, node);
         };
 
         // value ::
@@ -28,14 +33,25 @@ define('directives.insert', ['directives'], function (directives) {
         //   node
         //   array of value
         function insert(value) {
+            var next = cursor.nextSibling;
+
             if (value === null || value === undefined) {
                 // nothing to insert
             } else if (value.nodeType /* instanceof Node */) {
-                parent.insertBefore(value, node);
+                if (next !== value) {
+                    parent.insertBefore(value, next);
+                }
+                cursor = value;
             } else if (Array.isArray(value)) {
                 insertArray(value);
             } else {
-                parent.insertBefore(document.createTextNode(value.toString()), node);
+                value = value.toString();
+
+                if (next.nodeType !== 3 || next.data !== value) {
+                    cursor = parent.insertBefore(document.createTextNode(value), next);
+                } else {
+                    cursor = next;
+                }
             }
         }
 
@@ -66,5 +82,5 @@ define('directives.insert', ['directives'], function (directives) {
         function marker(el) {
             return parent.insertBefore(document.createTextNode(""), el);
         }
-    };
+    });
 });

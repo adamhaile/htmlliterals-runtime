@@ -1,9 +1,8 @@
-define('export', ['parse', 'cachedParse', 'Shell', 'directives', 'domlib'], function (parse, cachedParse, Shell, directives, domlib) {
+define('export', ['parse', 'cachedParse', 'Shell', 'domlib'], function (parse, cachedParse, Shell, domlib) {
     return {
         parse: parse,
         cachedParse: cachedParse,
         Shell: Shell,
-        directives: directives,
         domlib: domlib
     };
 });

@@ -6,7 +6,6 @@ var gulp = require('gulp'),
 gulp.task('dist', function() {
     gulp.src([
         "src/_preamble.js",
-        "src/directives.js",
         "src/domlib.js",
         "src/parse.js",
         "src/cachedParse.js",
@@ -23,4 +22,4 @@ gulp.task('dist', function() {
 });
 
 gulp.task('default', ['dist']);
-gulp.watch('src/*.js', ['dist']);
+gulp.watch(['src/*.js', 'src/directives/*.js'], ['dist']);

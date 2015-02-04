@@ -1,4 +1,4 @@
-define('Shell', ['directives'], function (directives) {
+define('Shell', [], function () {
     function Shell(node) {
         if (node.nodeType === undefined)
             throw new Error("Shell can only wrap a DOM node.  Value ``" + node + "'' is not a DOM node.")
@@ -6,19 +6,19 @@ define('Shell', ['directives'], function (directives) {
     }
 
     Shell.prototype = {
-        childNodes: function children(indices, fn) {
-            var childNodes = this.node.childNodes,
+        childNodes: function childNodes(indices, fn) {
+            var children = this.node.childNodes,
                 len = indices.length,
                 childShells = new Array(len),
                 i, child;
 
-            if (childNodes === undefined)
+            if (children === undefined)
                 throw new Error("Shell.childNodes can only be applied to a node with a \n"
                     + ".childNodes collection.  Node ``" + this.node + "'' does not have one. \n"
                     + "Perhaps you applied it to the wrong node?");
 
             for (i = 0; i < len; i++) {
-                child = childNodes[indices[i]];
+                child = children[indices[i]];
                 if (!child)
                     throw new Error("Node ``" + this.node + "'' does not have a child at index " + i + ".");
 
@@ -30,21 +30,27 @@ define('Shell', ['directives'], function (directives) {
             return this;
         },
 
-        directive: function directive(name, values) {
-            var fn = directives[name];
-
-            if (typeof fn !== 'function')
-                throw new Error("No directive registered with name: " + name);
-
-            values(fn(this.node));
-
-            return this;
-        },
-
         property: function property(setter) {
             setter(this.node);
             return this;
         }
+    };
+
+    Shell.addDirective = function addDirective(name, fn) {
+        Shell.prototype[name] = function directive(values) {
+            Shell.execDirective(fn, this.node, values);
+            return this;
+        };
+    };
+
+    Shell.execDirective = function execDirective(fn, node, values) {
+        values(fn(node));
+    };
+
+    Shell.cleanup = function (node, fn) {
+        // nothing right now -- this is primarily a hook for S.cleanup
+        // will consider a non-S design, like perhaps adding a .cleanup()
+        // closure to the node.
     };
 
     return Shell;

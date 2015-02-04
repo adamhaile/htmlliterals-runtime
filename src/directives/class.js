@@ -1,5 +1,5 @@
-define('directives.class', ['directives', 'domlib'], function (directives, domlib) {
-    directives.class = function (node) {
+define('directives.class', ['Shell', 'domlib'], function (Shell, domlib) {
+    Shell.addDirective('class', function (node) {
         if (node.className === undefined)
             throw new Error("@class can only be applied to an element that accepts class names. \n"
                 + "Element ``" + node + "'' does not. Perhaps you applied it to the wrong node?");
@@ -18,5 +18,5 @@ define('directives.class', ['directives', 'domlib'], function (directives, domli
                 if (off && !hasOff) domlib.classListAdd(node, off);
             }
         };
-    };
+    });
 });
