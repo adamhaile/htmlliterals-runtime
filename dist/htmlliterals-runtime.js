@@ -110,10 +110,11 @@ define('cachedParse', ['parse'], function (parse) {
     }
 })
 
-define('Shell', [], function () {
-    function Shell(node) {
+define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
+    function Shell(node, cache) {
         if (node.nodeType === undefined)
-            throw new Error("Shell can only wrap a DOM node.  Value ``" + node + "'' is not a DOM node.")
+            node = cache ? cachedParse(node, cache) : parse(node);
+
         this.node = node;
     }
 
