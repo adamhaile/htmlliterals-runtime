@@ -151,12 +151,12 @@ define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
 
     Shell.addDirective = function addDirective(name, fn) {
         Shell.prototype[name] = function directive(values) {
-            Shell.execDirective(fn, this.node, values);
+            Shell.runDirective(fn, this.node, values);
             return this;
         };
     };
 
-    Shell.execDirective = function execDirective(fn, node, values) {
+    Shell.runDirective = function runDirective(fn, node, values) {
         values(fn(node));
     };
 
@@ -201,12 +201,12 @@ define('directives.focus', ['Shell'], function (Shell) {
 });
 
 define('directives.insert', ['Shell'], function (Shell) {
-    Shell.addDirective('insert', function(node) {
+    Shell.addDirective('insert', function (node) {
         var parent,
             start,
             cursor;
 
-        return function (value) {
+        return function insert(value) {
             parent = node.parentNode;
 
             if (!parent)
@@ -234,7 +234,7 @@ define('directives.insert', ['Shell'], function (Shell) {
         //   string
         //   node
         //   array of value
-        function insert(value) {
+        function insertValue(value) {
             var next = cursor.nextSibling;
 
             if (value === null || value === undefined) {
@@ -289,34 +289,25 @@ define('directives.insert', ['Shell'], function (Shell) {
 
 define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
     Shell.addDirective('onkey', function (node) {
-        var keyCode,
-            event,
-            fn;
+        return function onkey(key, event, fn) {
+            if (arguments.length < 3) fn = event, event = 'down';
 
-        return function onkey(_key, _event, _fn) {
-            if (arguments.length < 3) _fn = _event, _event = 'down';
-
-            keyCode = keyCodes[_key.toLowerCase()];
-            fn = _fn;
+            var keyCode = keyCodes[key.toLowerCase()];
 
             if (keyCode === undefined)
-                throw new Error("@key: unrecognized key identifier '" + _key + "'");
+                throw new Error("@onkey: unrecognized key identifier '" + key + "'");
 
             if (typeof fn !== 'function')
-                throw new Error("@key: must supply a function to call when the key is entered");
+                throw new Error("@onkey: must supply a function to call when the key is entered");
 
-            _event = 'key' + _event;
-            if (_event !== event) {
-                if (event) domlib.removeEventListener(node, event, onkeyListener);
-                domlib.addEventListener(node, _event, onkeyListener);
-                event = _event;
+            domlib.addEventListener(node, 'key' + event, onkeyListener);
+            Shell.cleanup(node, function () { domlib.removeEventListener(node, 'key' + event, onkeyListener); });
+
+            function onkeyListener(e) {
+                if (e.keyCode === keyCode) fn();
+                return true;
             }
         };
-
-        function onkeyListener(e) {
-            if (e.keyCode === keyCode) fn();
-            return true;
-        }
     });
 
     var keyCodes = {

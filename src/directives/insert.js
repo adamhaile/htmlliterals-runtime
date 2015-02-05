@@ -1,10 +1,10 @@
 define('directives.insert', ['Shell'], function (Shell) {
-    Shell.addDirective('insert', function(node) {
+    Shell.addDirective('insert', function (node) {
         var parent,
             start,
             cursor;
 
-        return function (value) {
+        return function insert(value) {
             parent = node.parentNode;
 
             if (!parent)
@@ -32,7 +32,7 @@ define('directives.insert', ['Shell'], function (Shell) {
         //   string
         //   node
         //   array of value
-        function insert(value) {
+        function insertValue(value) {
             var next = cursor.nextSibling;
 
             if (value === null || value === undefined) {

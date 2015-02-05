@@ -39,12 +39,12 @@ define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
 
     Shell.addDirective = function addDirective(name, fn) {
         Shell.prototype[name] = function directive(values) {
-            Shell.execDirective(fn, this.node, values);
+            Shell.runDirective(fn, this.node, values);
             return this;
         };
     };
 
-    Shell.execDirective = function execDirective(fn, node, values) {
+    Shell.runDirective = function runDirective(fn, node, values) {
         values(fn(node));
     };
 
