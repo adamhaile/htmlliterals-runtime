@@ -224,7 +224,7 @@ define('directives.insert', ['Shell'], function (Shell) {
 
             cursor = start;
 
-            insert(value);
+            insertValue(value);
 
             clear(cursor, node);
         };
@@ -260,7 +260,7 @@ define('directives.insert', ['Shell'], function (Shell) {
         function insertArray(array) {
             var i, len, prev;
             for (i = 0, len = array.length; i < len; i++) {
-                insert(array[i]);
+                insertValue(array[i]);
                 // if we've enjambed two text nodes, separate them with a space
                 if (prev
                     && prev.nodeType == 3
