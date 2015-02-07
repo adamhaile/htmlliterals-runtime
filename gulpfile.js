@@ -9,9 +9,8 @@ gulp.task('dist', function() {
         "src/domlib.js",
         "src/parse.js",
         "src/cachedParse.js",
-        "src/Shell.js",
+        "src/Html.js",
         "src/directives/*.js",
-        "src/export.js",
         "src/_postamble.js"
     ])
     .pipe(concat("htmlliterals-runtime.js"))

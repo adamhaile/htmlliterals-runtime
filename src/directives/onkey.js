@@ -1,5 +1,5 @@
-define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
-    Shell.addDirective('onkey', function (node) {
+define('directives.onkey', ['Html'], function (Html) {
+    Html.addDirective('onkey', function (node) {
         return function onkey(key, event, fn) {
             if (arguments.length < 3) fn = event, event = 'down';
 
@@ -11,8 +11,8 @@ define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
             if (typeof fn !== 'function')
                 throw new Error("@onkey: must supply a function to call when the key is entered");
 
-            domlib.addEventListener(node, 'key' + event, onkeyListener);
-            Shell.cleanup(node, function () { domlib.removeEventListener(node, 'key' + event, onkeyListener); });
+            Html.domlib.addEventListener(node, 'key' + event, onkeyListener);
+            Html.cleanup(node, function () { Html.domlib.removeEventListener(node, 'key' + event, onkeyListener); });
 
             function onkeyListener(e) {
                 if (e.keyCode === keyCode) fn();
@@ -32,6 +32,7 @@ define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
         break:      19,
         capslock:   20,
         esc:        27,
+        escape:     27,
         space:      32,
         pageup:     33,
         pagedown:   34,

@@ -1,5 +1,5 @@
-define('directives.insert', ['Shell'], function (Shell) {
-    Shell.addDirective('insert', function (node) {
+define('directives.insert', ['Html'], function (Html) {
+    Html.addDirective('insert', function (node) {
         var parent,
             start,
             cursor;

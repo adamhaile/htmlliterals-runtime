@@ -1,13 +1,13 @@
-define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
-    function Shell(node, cache) {
+define('Html', ['parse', 'cachedParse', 'domlib'], function (parse, cachedParse, domlib) {
+    function Html(node, cache) {
         if (node.nodeType === undefined)
             node = cache ? cachedParse(node, cache) : parse(node);
 
         this.node = node;
     }
 
-    Shell.prototype = {
-        childNodes: function childNodes(indices, fn) {
+    Html.prototype = {
+        child: function child(indices, fn) {
             var children = this.node.childNodes,
                 len = indices.length,
                 childShells = new Array(len),
@@ -23,7 +23,7 @@ define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
                 if (!child)
                     throw new Error("Node ``" + this.node + "'' does not have a child at index " + i + ".");
 
-                childShells[i] = new Shell(child);
+                childShells[i] = new Html(child);
             }
 
             fn(childShells);
@@ -37,22 +37,24 @@ define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
         }
     };
 
-    Shell.addDirective = function addDirective(name, fn) {
-        Shell.prototype[name] = function directive(values) {
-            Shell.runDirective(fn, this.node, values);
+    Html.addDirective = function addDirective(name, fn) {
+        Html.prototype[name] = function directive(values) {
+            Html.runDirective(fn, this.node, values);
             return this;
         };
     };
 
-    Shell.runDirective = function runDirective(fn, node, values) {
+    Html.runDirective = function runDirective(fn, node, values) {
         values(fn(node));
     };
 
-    Shell.cleanup = function (node, fn) {
+    Html.cleanup = function (node, fn) {
         // nothing right now -- this is primarily a hook for S.cleanup
         // will consider a non-S design, like perhaps adding a .cleanup()
         // closure to the node.
     };
 
-    return Shell;
+    Html.domlib = domlib;
+
+    return Html;
 });

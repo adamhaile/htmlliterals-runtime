@@ -1,8 +1,7 @@
 (function (package) {
     // nano-implementation of require.js-like define(name, deps, impl) for internal use
     var definitions = {},
-        symbol = 'htmlliterals',
-        p;
+        symbol = 'Html';
 
     package(function define(name, deps, fn) {
         if (definitions.hasOwnProperty(name)) throw new Error("define: cannot redefine module " + name);
@@ -13,13 +12,11 @@
     });
 
     if (typeof module === 'object' && typeof module.exports === 'object')  // CommonJS
-        module.exports = definitions.export;
+        module.exports = definitions[symbol];
     else if (typeof define === 'function')  // AMD
-        define([], function () { return definitions.export; });
-    else if (typeof this[symbol] !== 'undefined') // existing global object
-        for (p in definitions.export) this[symbol][p] = definitions.export[p];
+        define([], function () { return definitions[symbol]; });
     else // new global object
-        this[symbol] = definitions.export;
+        this[symbol] = definitions[symbol];
 
 })(function (define) {
     "use strict";
@@ -110,16 +107,16 @@ define('cachedParse', ['parse'], function (parse) {
     }
 })
 
-define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
-    function Shell(node, cache) {
+define('Html', ['parse', 'cachedParse', 'domlib'], function (parse, cachedParse, domlib) {
+    function Html(node, cache) {
         if (node.nodeType === undefined)
             node = cache ? cachedParse(node, cache) : parse(node);
 
         this.node = node;
     }
 
-    Shell.prototype = {
-        childNodes: function childNodes(indices, fn) {
+    Html.prototype = {
+        child: function child(indices, fn) {
             var children = this.node.childNodes,
                 len = indices.length,
                 childShells = new Array(len),
@@ -135,7 +132,7 @@ define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
                 if (!child)
                     throw new Error("Node ``" + this.node + "'' does not have a child at index " + i + ".");
 
-                childShells[i] = new Shell(child);
+                childShells[i] = new Html(child);
             }
 
             fn(childShells);
@@ -149,28 +146,30 @@ define('Shell', ['parse', 'cachedParse'], function (parse, cachedParse) {
         }
     };
 
-    Shell.addDirective = function addDirective(name, fn) {
-        Shell.prototype[name] = function directive(values) {
-            Shell.runDirective(fn, this.node, values);
+    Html.addDirective = function addDirective(name, fn) {
+        Html.prototype[name] = function directive(values) {
+            Html.runDirective(fn, this.node, values);
             return this;
         };
     };
 
-    Shell.runDirective = function runDirective(fn, node, values) {
+    Html.runDirective = function runDirective(fn, node, values) {
         values(fn(node));
     };
 
-    Shell.cleanup = function (node, fn) {
+    Html.cleanup = function (node, fn) {
         // nothing right now -- this is primarily a hook for S.cleanup
         // will consider a non-S design, like perhaps adding a .cleanup()
         // closure to the node.
     };
 
-    return Shell;
+    Html.domlib = domlib;
+
+    return Html;
 });
 
-define('directives.class', ['Shell', 'domlib'], function (Shell, domlib) {
-    Shell.addDirective('class', function (node) {
+define('directives.class', ['Html'], function (Html) {
+    Html.addDirective('class', function (node) {
         if (node.className === undefined)
             throw new Error("@class can only be applied to an element that accepts class names. \n"
                 + "Element ``" + node + "'' does not. Perhaps you applied it to the wrong node?");
@@ -178,30 +177,30 @@ define('directives.class', ['Shell', 'domlib'], function (Shell, domlib) {
         return function classDirective(on, off, flag) {
             if (arguments.length < 3) flag = off, off = null;
 
-            var hasOn = domlib.classListContains(node, on),
-                hasOff = off && domlib.classListContains(node, off);
+            var hasOn = Html.domlib.classListContains(node, on),
+                hasOff = off && Html.domlib.classListContains(node, off);
 
             if (flag) {
-                if (!hasOn) domlib.classListAdd(node, on);
-                if (off && hasOff) domlib.classListRemove(node, off);
+                if (!hasOn) Html.domlib.classListAdd(node, on);
+                if (off && hasOff) Html.domlib.classListRemove(node, off);
             } else {
-                if (hasOn) domlib.classListRemove(node, on);
-                if (off && !hasOff) domlib.classListAdd(node, off);
+                if (hasOn) Html.domlib.classListRemove(node, on);
+                if (off && !hasOff) Html.domlib.classListAdd(node, off);
             }
         };
     });
 });
 
-define('directives.focus', ['Shell'], function (Shell) {
-    Shell.addDirective('focus', function focus(node) {
+define('directives.focus', ['Html'], function (Html) {
+    Html.addDirective('focus', function focus(node) {
         return function focus(flag) {
             flag ? node.focus() : node.blur();
         };
     });
 });
 
-define('directives.insert', ['Shell'], function (Shell) {
-    Shell.addDirective('insert', function (node) {
+define('directives.insert', ['Html'], function (Html) {
+    Html.addDirective('insert', function (node) {
         var parent,
             start,
             cursor;
@@ -287,8 +286,8 @@ define('directives.insert', ['Shell'], function (Shell) {
     });
 });
 
-define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
-    Shell.addDirective('onkey', function (node) {
+define('directives.onkey', ['Html'], function (Html) {
+    Html.addDirective('onkey', function (node) {
         return function onkey(key, event, fn) {
             if (arguments.length < 3) fn = event, event = 'down';
 
@@ -300,8 +299,8 @@ define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
             if (typeof fn !== 'function')
                 throw new Error("@onkey: must supply a function to call when the key is entered");
 
-            domlib.addEventListener(node, 'key' + event, onkeyListener);
-            Shell.cleanup(node, function () { domlib.removeEventListener(node, 'key' + event, onkeyListener); });
+            Html.domlib.addEventListener(node, 'key' + event, onkeyListener);
+            Html.cleanup(node, function () { Html.domlib.removeEventListener(node, 'key' + event, onkeyListener); });
 
             function onkeyListener(e) {
                 if (e.keyCode === keyCode) fn();
@@ -321,6 +320,7 @@ define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
         break:      19,
         capslock:   20,
         esc:        27,
+        escape:     27,
         space:      32,
         pageup:     33,
         pagedown:   34,
@@ -401,15 +401,6 @@ define('directives.onkey', ['Shell', 'domlib'], function (Shell, domlib) {
         "}":        221,
         "'":        222,
         "\"":       222
-    };
-});
-
-define('export', ['parse', 'cachedParse', 'Shell', 'domlib'], function (parse, cachedParse, Shell, domlib) {
-    return {
-        parse: parse,
-        cachedParse: cachedParse,
-        Shell: Shell,
-        domlib: domlib
     };
 });
 
