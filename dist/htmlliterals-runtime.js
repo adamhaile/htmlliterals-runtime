@@ -49,20 +49,27 @@ define('domlib', [], function () {
 define('parse', [], function () {
     var matchOpenTag = /<(\w+)/,
         containerElements = {
-            "li": "ul",
-            "td": "tr",
-            "th": "tr",
-            "tr": "tbody",
-            "thead": "table",
-            "tbody": "table",
-            "dd": "dl",
-            "dt": "dl",
-            "head": "html",
-            "body": "html"
+            "li"      : "ul",
+            "td"      : "tr",
+            "th"      : "tr",
+            "tr"      : "tbody",
+            "thead"   : "table",
+            "tbody"   : "table",
+            "dd"      : "dl",
+            "dt"      : "dl",
+            "head"    : "html",
+            "body"    : "html",
+            "svg"     : "svg",
+            "circle"  : "svg",
+            "rect"    : "svg",
+            "text"    : "svg",
+            "polyline": "svg",
+            "polygon" : "svg",
+            "line"    : "svg"
         };
 
     return function parse(html) {
-        var container = document.createElement(containerElement(html)),
+        var container = makeContainer(html),
             len,
             frag;
 
@@ -72,6 +79,7 @@ define('parse', [], function () {
         if (len === 0) {
             // special case: empty text node gets swallowed, so create it directly
             if (html === "") return document.createTextNode("");
+
             throw new Error("HTML parse failed for: " + html);
         } else if (len === 1) {
             return container.childNodes[0];
@@ -82,28 +90,43 @@ define('parse', [], function () {
                 frag.appendChild(container.childNodes[0]);
             }
 
+            frag.startNode = frag.firstChild;
+            frag.endNode = frag.lastChild;
+
             return frag;
         }
     }
 
-    function containerElement(html) {
-        var m = matchOpenTag.exec(html);
-        return m && containerElements[m[1].toLowerCase()] || "div";
+    function makeContainer(html) {
+        var m = matchOpenTag.exec(html),
+            tag = m && containerElements[m[1].toLowerCase()] || "div";
+
+        return tag ==="svg" ? document.createElementNS("http://www.w3.org/2000/svg", tag)
+            : document.createElement(tag);
     }
 });
 
 define('cachedParse', ['parse'], function (parse) {
-    var cache = {};
+    var cache = {},
+        DOCUMENT_FRAGMENT_NODE = 11;
 
     return function cachedParse(id, html) {
-        var cached = cache[id];
+        var cached = cache[id],
+            copy;
 
         if (cached === undefined) {
             cached = parse(html);
             cache[id] = cached;
         }
 
-        return cached.cloneNode(true);
+        copy = cached.cloneNode(true);
+
+        if (copy.nodeType === DOCUMENT_FRAGMENT_NODE) {
+            copy.startNode = copy.firstChild;
+            copy.endNode = copy.lastChild;
+        }
+
+        return copy;
     }
 })
 
@@ -168,6 +191,14 @@ define('Html', ['parse', 'cachedParse', 'domlib'], function (parse, cachedParse,
     return Html;
 });
 
+define('directives.attr', ['Html'], function (Html) {
+    Html.addDirective('attr', function (node) {
+        return function attr(name, value) {
+            node.setAttribute(name, value);
+        };
+    });
+});
+
 define('directives.class', ['Html'], function (Html) {
     Html.addDirective('class', function (node) {
         if (node.className === undefined)
@@ -200,6 +231,9 @@ define('directives.focus', ['Html'], function (Html) {
 });
 
 define('directives.insert', ['Html'], function (Html) {
+
+    var DOCUMENT_FRAGMENT_NODE = 11;
+
     Html.addDirective('insert', function (node) {
         var parent,
             start,
@@ -238,6 +272,15 @@ define('directives.insert', ['Html'], function (Html) {
 
             if (value === null || value === undefined) {
                 // nothing to insert
+            } else if (value.nodeType === DOCUMENT_FRAGMENT_NODE) {
+                // special case for document fragment that has already been emptied:
+                // use the cached start and end nodes and insert as a range
+                if (value.childNodes.length === 0 && value.startNode && value.endNode) {
+                    insertRange(value.startNode, value.endNode);
+                } else {
+                    parent.insertBefore(value, next);
+                    cursor = next.previousSibling;
+                }
             } else if (value.nodeType /* instanceof Node */) {
                 if (next !== value) {
                     parent.insertBefore(value, next);
@@ -272,7 +315,30 @@ define('directives.insert', ['Html'], function (Html) {
             }
         }
 
+        function insertRange(head, end) {
+            var node,
+                next = cursor.nextSibling;
+
+            if (head.parentNode !== end.parentNode)
+                throw new Error("Range must be siblings");
+
+            do {
+                node = head, head = head.nextSibling;
+
+                if (!node) throw new Error("end must come after head");
+
+                if (node !== next) {
+                    parent.insertBefore(node, next);
+                } else {
+                    next = next.nextSibling;
+                }
+            } while (node !== end);
+
+            cursor = end;
+        }
+
         function clear(start, end) {
+            if (start === end) return;
             var next = start.nextSibling;
             while (next !== end) {
                 parent.removeChild(next);

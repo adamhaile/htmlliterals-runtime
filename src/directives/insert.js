@@ -1,4 +1,7 @@
 define('directives.insert', ['Html'], function (Html) {
+
+    var DOCUMENT_FRAGMENT_NODE = 11;
+
     Html.addDirective('insert', function (node) {
         var parent,
             start,
@@ -37,6 +40,15 @@ define('directives.insert', ['Html'], function (Html) {
 
             if (value === null || value === undefined) {
                 // nothing to insert
+            } else if (value.nodeType === DOCUMENT_FRAGMENT_NODE) {
+                // special case for document fragment that has already been emptied:
+                // use the cached start and end nodes and insert as a range
+                if (value.childNodes.length === 0 && value.startNode && value.endNode) {
+                    insertRange(value.startNode, value.endNode);
+                } else {
+                    parent.insertBefore(value, next);
+                    cursor = next.previousSibling;
+                }
             } else if (value.nodeType /* instanceof Node */) {
                 if (next !== value) {
                     parent.insertBefore(value, next);
@@ -71,7 +83,30 @@ define('directives.insert', ['Html'], function (Html) {
             }
         }
 
+        function insertRange(head, end) {
+            var node,
+                next = cursor.nextSibling;
+
+            if (head.parentNode !== end.parentNode)
+                throw new Error("Range must be siblings");
+
+            do {
+                node = head, head = head.nextSibling;
+
+                if (!node) throw new Error("end must come after head");
+
+                if (node !== next) {
+                    parent.insertBefore(node, next);
+                } else {
+                    next = next.nextSibling;
+                }
+            } while (node !== end);
+
+            cursor = end;
+        }
+
         function clear(start, end) {
+            if (start === end) return;
             var next = start.nextSibling;
             while (next !== end) {
                 parent.removeChild(next);
