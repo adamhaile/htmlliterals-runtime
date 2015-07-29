@@ -12,12 +12,15 @@ define('parse', [], function () {
             "head"    : "html",
             "body"    : "html",
             "svg"     : "svg",
+            "g"       : "svg",
             "circle"  : "svg",
+            "elipse"  : "svg",
             "rect"    : "svg",
             "text"    : "svg",
             "polyline": "svg",
             "polygon" : "svg",
-            "line"    : "svg"
+            "line"    : "svg",
+            "path"    : "svg"
         };
 
     return function parse(html) {
