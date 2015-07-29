@@ -3,7 +3,9 @@ define('directives.onkey', ['Html'], function (Html) {
         return function onkey(key, event, fn) {
             if (arguments.length < 3) fn = event, event = 'down';
 
-            var keyCode = keyCodes[key.toLowerCase()];
+            var parts = key.toLowerCase().split('-', 2),
+                keyCode = keyCodes[parts[parts.length - 1]],
+                mod = parts.length > 1 ? parts[0] + "Key" : null;
 
             if (keyCode === undefined)
                 throw new Error("@onkey: unrecognized key identifier '" + key + "'");
@@ -15,7 +17,7 @@ define('directives.onkey', ['Html'], function (Html) {
             Html.cleanup(node, function () { Html.domlib.removeEventListener(node, 'key' + event, onkeyListener); });
 
             function onkeyListener(e) {
-                if (e.keyCode === keyCode) fn();
+                if (e.keyCode === keyCode && (!mod || e[mod])) fn(e);
                 return true;
             }
         };
