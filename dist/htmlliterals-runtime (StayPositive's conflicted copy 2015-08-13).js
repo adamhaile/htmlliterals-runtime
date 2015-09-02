@@ -218,9 +218,9 @@ define('Html', ['parse', 'cachedParse', 'domlib'], function (parse, cachedParse,
 });
 
 define('Html.insert', ['Html'], function (Html) {
-    var DOCUMENT_FRAGMENT_NODE = 11,
-        TEXT_NODE = 3;
-        
+
+    var DOCUMENT_FRAGMENT_NODE = 11;
+
     Html.prototype.insert = function insert(value) {
         var node = this.node,
             parent = node.parentNode,
@@ -230,7 +230,7 @@ define('Html.insert', ['Html'], function (Html) {
         return this.mixin(insert);
 
         function insert() {
-            return function insert(node, state) {
+            return function insert() {
                 parent = node.parentNode;
     
                 if (!parent) {
@@ -276,11 +276,7 @@ define('Html.insert', ['Html'], function (Html) {
                 }
             } else if (value.nodeType /* instanceof Node */) {
                 if (next !== value) {
-                    if (next.nextSibling === value && next !== value.nextSibling) {
-                        parent.removeChild(next);
-                    } else {
-                        parent.insertBefore(value, next);
-                    }
+                    parent.insertBefore(value, next);
                 }
                 cursor = value;
             } else if (Array.isArray(value)) {
@@ -288,7 +284,7 @@ define('Html.insert', ['Html'], function (Html) {
             } else {
                 value = value.toString();
 
-                if (next.nodeType !== TEXT_NODE) {
+                if (next.nodeType !== 3) {
                     cursor = parent.insertBefore(document.createTextNode(value), next);
                 } else {
                     if (next.data !== value) {
@@ -361,15 +357,13 @@ define('Html.attr', ['Html'], function (Html) {
 });
 
 define('Html.class', ['Html'], function (Html) {
-    Html.class = function classMixin(on, off, flag) {            
+    Html.class = function classDirective(on, off, flag) {            
         if (arguments.length < 3) flag = off, off = null;
             
-        return function classMixin(node, state) {
+        return function (node) {
             if (node.className === undefined)
                 throw new Error("@class can only be applied to an element that accepts class names. \n"
                     + "Element ``" + node + "'' does not. Perhaps you applied it to the wrong node?");
-                    
-            if (flag === state) return state;
 
             var hasOn = Html.domlib.classListContains(node, on),
                 hasOff = off && Html.domlib.classListContains(node, off);
@@ -381,8 +375,6 @@ define('Html.class', ['Html'], function (Html) {
                 if (hasOn) Html.domlib.classListRemove(node, on);
                 if (off && !hasOff) Html.domlib.classListAdd(node, off);
             }
-            
-            return flag;
         };
     };
 });

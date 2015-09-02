@@ -10,7 +10,8 @@ gulp.task('dist', function() {
         "src/parse.js",
         "src/cachedParse.js",
         "src/Html.js",
-        "src/directives/*.js",
+        "src/insert.js",
+        "src/mixins/*.js",
         "src/_postamble.js"
     ])
     .pipe(concat("htmlliterals-runtime.js"))
@@ -21,4 +22,4 @@ gulp.task('dist', function() {
 });
 
 gulp.task('default', ['dist']);
-gulp.watch(['src/*.js', 'src/directives/*.js'], ['dist']);
+gulp.watch(['src/*.js', 'src/mixins/*.js'], ['dist']);

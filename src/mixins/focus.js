@@ -1,4 +1,4 @@
-define('directives.focus', ['Html'], function (Html) {
+define('Html.focus', ['Html'], function (Html) {
     /**
      * In htmlliterals, directives run when a node is created, meaning before it has usually
      * been inserted into the document.  This causes a problem for the @focus directive, as only
@@ -12,21 +12,25 @@ define('directives.focus', ['Html'], function (Html) {
         endPos = NaN,
         scheduled = false;
     
-    Html.addDirective('focus', function focus(node) {
-        if (!node.focus)
-            throw new Error("@focus can only be applied to an element that has a .focus() method, like <input>, <select>, <textarea>, etc.");
-            
-        return function focus(flag, start, end) {
+    Html.focus = function focus(flag, start, end) {
+        start = arguments.length > 1 ? start : NaN;
+        end = arguments.length > 2 ? end : start;
+        
+        return function focus(node) {
+            if (!node.focus) {
+                throw new Error("@focus can only be applied to an element that has a .focus() method, like <input>, <select>, <textarea>, etc.");
+            }
+                
             if (flag) {
                 nodeToFocus = node;
-                startPos = arguments.length > 1 ? start : NaN;
-                endPos = arguments.length > 2 ? end : startPos;
+                startPos = start;
+                endPos = end;
                 if (!scheduled) window.requestAnimationFrame(focuser);
             } else {
                 node.blur();
             }
         };
-    });
+    };
     
     function focuser() {
         scheduled = false;

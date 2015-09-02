@@ -2,10 +2,10 @@ describe("Html::class", function () {
     it("can toggle a class on or off based on a truthy value", function () {
         var html = new Html("<input></input>");
 
-        html.class(function (__) { __("true", true); });
-        html.class(function (__) { __("false", false); });
-        html.class(function (__) { __("one", 1); });
-        html.class(function (__) { __("zero", 0); });
+        html.mixin(function () { return Html.class("true", true); });
+        html.mixin(function () { return Html.class("false", false); });
+        html.mixin(function () { return Html.class("one", 1); });
+        html.mixin(function () { return Html.class("zero", 0); });
 
         expect(html.node.classList.contains("true")).toBe(true);
         expect(html.node.classList.contains("false")).toBe(false);
@@ -17,8 +17,8 @@ describe("Html::class", function () {
         var html = new Html("<input></input>");
 
         // on/off classes with static flag
-        html.class(function (__) { __("blech", "unblech", true); });
-        html.class(function (__) { __("garg", "ungarg", false); });
+        html.mixin(function () { return Html.class("blech", "unblech", true); });
+        html.mixin(function () { return Html.class("garg", "ungarg", false); });
 
         expect(html.node.classList.contains("blech")).toBe(true);
         expect(html.node.classList.contains("unblech")).toBe(false);

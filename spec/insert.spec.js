@@ -63,7 +63,7 @@ describe("Html::insert", function () {
         var html = new Html(container);
 
         html.child([1], function (__) {
-            __[0].insert(function (__) { __(val); });
+            __[0].insert(function () { return val; });
         })
 
         return html.node;

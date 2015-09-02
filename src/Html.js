@@ -34,18 +34,12 @@ define('Html', ['parse', 'cachedParse', 'domlib'], function (parse, cachedParse,
         property: function property(setter) {
             setter(this.node);
             return this;
-        }
-    };
-
-    Html.addDirective = function addDirective(name, fn) {
-        Html.prototype[name] = function directive(values) {
-            Html.runDirective(fn, this.node, values);
+        },
+        
+        mixin: function mixin(fn) {
+            fn()(this.node);
             return this;
-        };
-    };
-
-    Html.runDirective = function runDirective(fn, node, values) {
-        values(fn(node));
+        }
     };
 
     Html.cleanup = function (node, fn) {

@@ -3,7 +3,7 @@ describe("Html::attr", function () {
         var html = new Html("<input></input>");
 
         // static property value
-        html.attr(function (__) { __("type", "radio"); });
+        html.mixin(function () { return Html.attr("type", "radio"); });
 
         expect(html.node.getAttribute("type")).toBe("radio");
     });

@@ -1,27 +1,27 @@
-define('directives.onkey', ['Html'], function (Html) {
-    Html.addDirective('onkey', function (node) {
-        return function onkey(key, event, fn) {
-            if (arguments.length < 3) fn = event, event = 'down';
+define('Html.onkey', ['Html'], function (Html) {
+    Html.onkey = function onkey(key, event, fn) {
+        if (arguments.length < 3) fn = event, event = 'down';
 
-            var parts = key.toLowerCase().split('-', 2),
-                keyCode = keyCodes[parts[parts.length - 1]],
-                mod = parts.length > 1 ? parts[0] + "Key" : null;
+        var parts = key.toLowerCase().split('-', 2),
+            keyCode = keyCodes[parts[parts.length - 1]],
+            mod = parts.length > 1 ? parts[0] + "Key" : null;
 
-            if (keyCode === undefined)
-                throw new Error("@onkey: unrecognized key identifier '" + key + "'");
+        if (keyCode === undefined)
+            throw new Error("@Html.onkey: unrecognized key identifier '" + key + "'");
 
-            if (typeof fn !== 'function')
-                throw new Error("@onkey: must supply a function to call when the key is entered");
-
+        if (typeof fn !== 'function')
+            throw new Error("@Html.onkey: must supply a function to call when the key is entered");
+            
+        return function (node) {
             Html.domlib.addEventListener(node, 'key' + event, onkeyListener);
             Html.cleanup(node, function () { Html.domlib.removeEventListener(node, 'key' + event, onkeyListener); });
-
-            function onkeyListener(e) {
-                if (e.keyCode === keyCode && (!mod || e[mod])) fn(e);
-                return true;
-            }
         };
-    });
+        
+        function onkeyListener(e) {
+            if (e.keyCode === keyCode && (!mod || e[mod])) fn(e);
+            return true;
+        }
+    };
 
     var keyCodes = {
         backspace:  8,
