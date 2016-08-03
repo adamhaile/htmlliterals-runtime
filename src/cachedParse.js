@@ -14,8 +14,7 @@ define('cachedParse', ['parse'], function (parse) {
         copy = cached.cloneNode(true);
 
         if (copy.nodeType === DOCUMENT_FRAGMENT_NODE) {
-            copy.startNode = copy.firstChild;
-            copy.endNode = copy.lastChild;
+            copy.originalNodes = Array.prototype.slice.call(copy.childNodes);
         }
 
         return copy;

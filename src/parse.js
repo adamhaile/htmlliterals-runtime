@@ -45,9 +45,8 @@ define('parse', [], function () {
                 frag.appendChild(container.childNodes[0]);
             }
 
-            frag.startNode = frag.firstChild;
-            frag.endNode = frag.lastChild;
-
+            frag.originalNodes = Array.prototype.slice.apply(frag.childNodes);
+            
             return frag;
         }
     }
