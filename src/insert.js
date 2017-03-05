@@ -3,37 +3,50 @@ define('Html.insert', ['Html'], function (Html) {
         TEXT_NODE = 3;
         
     Html.prototype.insert = function insert(value) {
-        var node = this.node,
+        var shell = this,
+            node = this.node,
             parent = node.parentNode,
             start = marker(node),
             cursor = start;
 
-        return this.mixin(insert);
+        unwrap(value);
 
-        function insert() {
-            return function insert(node, state) {
-                parent = node.parentNode;
-    
-                if (!parent) {
-                    throw new Error("@insert can only be used on a node that has a parent node. \n"
-                        + "Node ``" + node + "'' is currently unattached to a parent.");
-                }
-                
-                if (start.parentNode !== parent) {
-                    throw new Error("@insert requires that the inserted nodes remain sibilings \n"
-                        + "of the original node.  The DOM has been modified such that this is \n"
-                        + "no longer the case.");
-                }
-    
-                // set our cursor to the start of the insert range
-                cursor = start;
-    
-                // insert the current value
-                insertValue(value());
-    
-                // remove anything left after the cursor from the insert range
-                clear(cursor, node);
-            };
+        return this;
+
+        function unwrap(value) {
+            if (value instanceof Function) {
+                shell.mixin(function insert() {
+                    return function insert(node) {
+                        unwrap(value());
+                    };
+                });
+            } else {
+                insert(value);
+            }
+        }
+
+        function insert(value) {
+            parent = node.parentNode;
+
+            if (!parent) {
+                throw new Error("@insert can only be used on a node that has a parent node. \n"
+                    + "Node ``" + node + "'' is currently unattached to a parent.");
+            }
+            
+            if (start.parentNode !== parent) {
+                throw new Error("@insert requires that the inserted nodes remain sibilings \n"
+                    + "of the original node.  The DOM has been modified such that this is \n"
+                    + "no longer the case.");
+            }
+
+            // set our cursor to the start of the insert range
+            cursor = start;
+
+            // insert the current value
+            insertValue(value);
+
+            // remove anything left after the cursor from the insert range
+            clear(cursor, node);
         }
 
         // value ::

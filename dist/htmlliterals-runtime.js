@@ -122,9 +122,8 @@ define('parse', [], function () {
                 frag.appendChild(container.childNodes[0]);
             }
 
-            frag.startNode = frag.firstChild;
-            frag.endNode = frag.lastChild;
-
+            frag.originalNodes = Array.prototype.slice.apply(frag.childNodes);
+            
             return frag;
         }
     }
@@ -154,8 +153,7 @@ define('cachedParse', ['parse'], function (parse) {
         copy = cached.cloneNode(true);
 
         if (copy.nodeType === DOCUMENT_FRAGMENT_NODE) {
-            copy.startNode = copy.firstChild;
-            copy.endNode = copy.lastChild;
+            copy.originalNodes = Array.prototype.slice.call(copy.childNodes);
         }
 
         return copy;
@@ -222,37 +220,50 @@ define('Html.insert', ['Html'], function (Html) {
         TEXT_NODE = 3;
         
     Html.prototype.insert = function insert(value) {
-        var node = this.node,
+        var shell = this,
+            node = this.node,
             parent = node.parentNode,
             start = marker(node),
             cursor = start;
 
-        return this.mixin(insert);
+        unwrap(value);
 
-        function insert() {
-            return function insert(node, state) {
-                parent = node.parentNode;
-    
-                if (!parent) {
-                    throw new Error("@insert can only be used on a node that has a parent node. \n"
-                        + "Node ``" + node + "'' is currently unattached to a parent.");
-                }
-                
-                if (start.parentNode !== parent) {
-                    throw new Error("@insert requires that the inserted nodes remain sibilings \n"
-                        + "of the original node.  The DOM has been modified such that this is \n"
-                        + "no longer the case.");
-                }
-    
-                // set our cursor to the start of the insert range
-                cursor = start;
-    
-                // insert the current value
-                insertValue(value());
-    
-                // remove anything left after the cursor from the insert range
-                clear(cursor, node);
-            };
+        return this;
+
+        function unwrap(value) {
+            if (value instanceof Function) {
+                shell.mixin(function insert() {
+                    return function insert(node) {
+                        unwrap(value());
+                    };
+                });
+            } else {
+                insert(value);
+            }
+        }
+
+        function insert(value) {
+            parent = node.parentNode;
+
+            if (!parent) {
+                throw new Error("@insert can only be used on a node that has a parent node. \n"
+                    + "Node ``" + node + "'' is currently unattached to a parent.");
+            }
+            
+            if (start.parentNode !== parent) {
+                throw new Error("@insert requires that the inserted nodes remain sibilings \n"
+                    + "of the original node.  The DOM has been modified such that this is \n"
+                    + "no longer the case.");
+            }
+
+            // set our cursor to the start of the insert range
+            cursor = start;
+
+            // insert the current value
+            insertValue(value);
+
+            // remove anything left after the cursor from the insert range
+            clear(cursor, node);
         }
 
         // value ::
@@ -267,9 +278,9 @@ define('Html.insert', ['Html'], function (Html) {
                 // nothing to insert
             } else if (value.nodeType === DOCUMENT_FRAGMENT_NODE) {
                 // special case for document fragment that has already been emptied:
-                // use the cached start and end nodes and insert as a range
-                if (value.childNodes.length === 0 && value.startNode && value.endNode) {
-                    insertRange(value.startNode, value.endNode);
+                // use the cached originalNodes array and insert as an array
+                if (value.childNodes.length === 0 && value.originalNodes) {
+                    insertArray(value.originalNodes);
                 } else {
                     parent.insertBefore(value, next);
                     cursor = next.previousSibling;
@@ -313,28 +324,6 @@ define('Html.insert', ['Html'], function (Html) {
                 }
                 prev = node.previousSibling;
             }
-        }
-
-        function insertRange(head, end) {
-            var node,
-                next = cursor.nextSibling;
-
-            if (head.parentNode !== end.parentNode)
-                throw new Error("Range must be siblings");
-
-            do {
-                node = head, head = head.nextSibling;
-
-                if (!node) throw new Error("end must come after head");
-
-                if (node !== next) {
-                    parent.insertBefore(node, next);
-                } else {
-                    next = next.nextSibling;
-                }
-            } while (node !== end);
-
-            cursor = end;
         }
 
         function clear(start, end) {
