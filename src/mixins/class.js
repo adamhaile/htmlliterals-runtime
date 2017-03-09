@@ -1,4 +1,4 @@
-define('Html.class', ['Html'], function (Html) {
+define('Html.class', ['Html', 'domlib'], function (Html, domlib) {
     Html.class = function classMixin(on, off, flag) {            
         if (arguments.length < 3) flag = off, off = null;
             
@@ -9,15 +9,15 @@ define('Html.class', ['Html'], function (Html) {
                     
             if (flag === state) return state;
 
-            var hasOn = Html.domlib.classListContains(node, on),
-                hasOff = off && Html.domlib.classListContains(node, off);
+            var hasOn = domlib.classListContains(node, on),
+                hasOff = off && domlib.classListContains(node, off);
 
             if (flag) {
-                if (!hasOn) Html.domlib.classListAdd(node, on);
-                if (off && hasOff) Html.domlib.classListRemove(node, off);
+                if (!hasOn) domlib.classListAdd(node, on);
+                if (off && hasOff) domlib.classListRemove(node, off);
             } else {
-                if (hasOn) Html.domlib.classListRemove(node, on);
-                if (off && !hasOff) Html.domlib.classListAdd(node, off);
+                if (hasOn) domlib.classListRemove(node, on);
+                if (off && !hasOff) domlib.classListAdd(node, off);
             }
             
             return flag;

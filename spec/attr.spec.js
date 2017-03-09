@@ -1,10 +1,10 @@
 describe("Html::attr", function () {
     it("sets the given attribute", function () {
-        var html = new Html("<input></input>");
+        var input = document.createElement("input");
 
         // static property value
-        html.mixin(function () { return Html.attr("type", "radio"); });
+        Html.attr("type", "radio")(input);
 
-        expect(html.node.getAttribute("type")).toBe("radio");
+        expect(input.getAttribute("type")).toBe("radio");
     });
 })

@@ -75,167 +75,38 @@ define('domlib', [], function () {
     }
 });
 
-define('parse', [], function () {
-    var matchOpenTag = /<(\w+)/,
-        containerElements = {
-            "li"      : "ul",
-            "td"      : "tr",
-            "th"      : "tr",
-            "tr"      : "tbody",
-            "thead"   : "table",
-            "tbody"   : "table",
-            "dd"      : "dl",
-            "dt"      : "dl",
-            "head"    : "html",
-            "body"    : "html",
-            "svg"     : "svg",
-            "g"       : "svg",
-            "circle"  : "svg",
-            "elipse"  : "svg",
-            "rect"    : "svg",
-            "text"    : "svg",
-            "polyline": "svg",
-            "polygon" : "svg",
-            "line"    : "svg",
-            "path"    : "svg"
-        };
-
-    return function parse(html) {
-        var container = makeContainer(html),
-            len,
-            frag;
-
-        container.innerHTML = html;
-        len = container.childNodes.length;
-
-        if (len === 0) {
-            // special case: empty text node gets swallowed, so create it directly
-            if (html === "") return document.createTextNode("");
-
-            throw new Error("HTML parse failed for: " + html);
-        } else if (len === 1) {
-            return container.childNodes[0];
-        } else {
-            frag = document.createDocumentFragment();
-
-            while(container.childNodes.length !== 0) {
-                frag.appendChild(container.childNodes[0]);
-            }
-
-            frag.originalNodes = Array.prototype.slice.apply(frag.childNodes);
-            
-            return frag;
-        }
-    }
-
-    function makeContainer(html) {
-        var m = matchOpenTag.exec(html),
-            tag = m && containerElements[m[1].toLowerCase()] || "div";
-
-        return tag ==="svg" ? document.createElementNS("http://www.w3.org/2000/svg", tag)
-            : document.createElement(tag);
-    }
-});
-
-define('cachedParse', ['parse'], function (parse) {
-    var cache = {},
-        DOCUMENT_FRAGMENT_NODE = 11;
-
-    return function cachedParse(id, html) {
-        var cached = cache[id],
-            copy;
-
-        if (cached === undefined) {
-            cached = parse(html);
-            cache[id] = cached;
-        }
-
-        copy = cached.cloneNode(true);
-
-        if (copy.nodeType === DOCUMENT_FRAGMENT_NODE) {
-            copy.originalNodes = Array.prototype.slice.call(copy.childNodes);
-        }
-
-        return copy;
-    }
-})
-
-define('Html', ['parse', 'cachedParse', 'domlib'], function (parse, cachedParse, domlib) {
-    function Html(node, cache) {
-        if (node.nodeType === undefined)
-            node = cache ? cachedParse(node, cache) : parse(node);
-
-        this.node = node;
-    }
-
-    Html.prototype = {
-        child: function child(indices, fn) {
-            var children = this.node.childNodes,
-                len = indices.length,
-                childShells = new Array(len),
-                i, child;
-
-            if (children === undefined)
-                throw new Error("Shell.childNodes can only be applied to a node with a \n"
-                    + ".childNodes collection.  Node ``" + this.node + "'' does not have one. \n"
-                    + "Perhaps you applied it to the wrong node?");
-
-            for (i = 0; i < len; i++) {
-                child = children[indices[i]];
-                if (!child)
-                    throw new Error("Node ``" + this.node + "'' does not have a child at index " + i + ".");
-
-                childShells[i] = new Html(child);
-            }
-
-            fn(childShells);
-
-            return this;
+define('Html', ['domlib'], function (domlib) {
+    return {
+        exec: function exec(fn) {
+            fn();
         },
 
-        property: function property(setter) {
-            setter(this.node);
-            return this;
+        cleanup: function (node, fn) {
+            // nothing right now -- this is primarily a hook for S.cleanup
+            // will consider a non-S design, like perhaps adding a .cleanup()
+            // closure to the node.
         },
-        
-        mixin: function mixin(fn) {
-            fn()(this.node);
-            return this;
-        }
+
+        domlib: domlib
     };
-
-    Html.cleanup = function (node, fn) {
-        // nothing right now -- this is primarily a hook for S.cleanup
-        // will consider a non-S design, like perhaps adding a .cleanup()
-        // closure to the node.
-    };
-
-    Html.domlib = domlib;
-
-    return Html;
 });
 
 define('Html.insert', ['Html'], function (Html) {
     var DOCUMENT_FRAGMENT_NODE = 11,
         TEXT_NODE = 3;
         
-    Html.prototype.insert = function insert(value) {
-        var shell = this,
-            node = this.node,
-            parent = node.parentNode,
-            start = marker(node),
-            cursor = start;
+    Html.insert = function insert(node, value, start) {
+        start = start || marker(node);
+        var parent, cursor;
 
         unwrap(value);
 
-        return this;
+        return start;
 
         function unwrap(value) {
             if (value instanceof Function) {
-                shell.mixin(function insert() {
-                    return function insert(node) {
-                        unwrap(value());
-                    };
+                Html.exec(function insert() {
+                    unwrap(value());
                 });
             } else {
                 insert(value);
@@ -336,7 +207,7 @@ define('Html.insert', ['Html'], function (Html) {
         }
 
         function marker(el) {
-            return parent.insertBefore(document.createTextNode(""), el);
+            return el.parentNode.insertBefore(document.createTextNode(""), el);
         }
     };
 });
@@ -349,7 +220,7 @@ define('Html.attr', ['Html'], function (Html) {
     };
 });
 
-define('Html.class', ['Html'], function (Html) {
+define('Html.class', ['Html', 'domlib'], function (Html, domlib) {
     Html.class = function classMixin(on, off, flag) {            
         if (arguments.length < 3) flag = off, off = null;
             
@@ -360,15 +231,15 @@ define('Html.class', ['Html'], function (Html) {
                     
             if (flag === state) return state;
 
-            var hasOn = Html.domlib.classListContains(node, on),
-                hasOff = off && Html.domlib.classListContains(node, off);
+            var hasOn = domlib.classListContains(node, on),
+                hasOff = off && domlib.classListContains(node, off);
 
             if (flag) {
-                if (!hasOn) Html.domlib.classListAdd(node, on);
-                if (off && hasOff) Html.domlib.classListRemove(node, off);
+                if (!hasOn) domlib.classListAdd(node, on);
+                if (off && hasOff) domlib.classListRemove(node, off);
             } else {
-                if (hasOn) Html.domlib.classListRemove(node, on);
-                if (off && !hasOff) Html.domlib.classListAdd(node, off);
+                if (hasOn) domlib.classListRemove(node, on);
+                if (off && !hasOff) domlib.classListAdd(node, off);
             }
             
             return flag;
@@ -376,7 +247,7 @@ define('Html.class', ['Html'], function (Html) {
     };
 });
 
-define('Html.focus', ['Html'], function (Html) {
+define('Html.focus', ['Html', 'domlib'], function (Html, domlib) {
     /**
      * In htmlliterals, directives run when a node is created, meaning before it has usually
      * been inserted into the document.  This causes a problem for the @focus directive, as only
@@ -427,7 +298,7 @@ define('Html.focus', ['Html'], function (Html) {
                 range.moveEnd('character', end);
                 range.moveStart('character', start);
                 range.select();
-            } else if (Html.domlib.isContentEditable(nodeToFocus) && nodeToFocus.childNodes.length > 0) {
+            } else if (domlib.isContentEditable(nodeToFocus) && nodeToFocus.childNodes.length > 0) {
                 range = document.createRange();
                 range.setStart(nodeToFocus.childNodes[0], start);
                 range.setEnd(nodeToFocus.childNodes[0], end);
@@ -439,7 +310,7 @@ define('Html.focus', ['Html'], function (Html) {
     }
 });
 
-define('Html.onkey', ['Html'], function (Html) {
+define('Html.onkey', ['Html', 'domlib'], function (Html, domlib) {
     Html.onkey = function onkey(key, event, fn) {
         if (arguments.length < 3) fn = event, event = 'down';
 
@@ -454,8 +325,8 @@ define('Html.onkey', ['Html'], function (Html) {
             throw new Error("@Html.onkey: must supply a function to call when the key is entered");
             
         return function (node) {
-            Html.domlib.addEventListener(node, 'key' + event, onkeyListener);
-            Html.cleanup(node, function () { Html.domlib.removeEventListener(node, 'key' + event, onkeyListener); });
+            domlib.addEventListener(node, 'key' + event, onkeyListener);
+            Html.cleanup(node, function () { domlib.removeEventListener(node, 'key' + event, onkeyListener); });
         };
         
         function onkeyListener(e) {

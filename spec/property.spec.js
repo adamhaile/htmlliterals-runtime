@@ -1,10 +1,10 @@
 describe("Html::property", function () {
     it("sets the given property", function () {
-        var html = new Html("<input></input>");
+        var input = document.createElement("input");
 
         // static property value
-        html.property(function (__) { __.type = "radio"; });
+        input.type = "radio";
 
-        expect(html.node.type).toBe("radio");
+        expect(input.type).toBe("radio");
     });
 })

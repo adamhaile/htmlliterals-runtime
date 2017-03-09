@@ -2,23 +2,18 @@ define('Html.insert', ['Html'], function (Html) {
     var DOCUMENT_FRAGMENT_NODE = 11,
         TEXT_NODE = 3;
         
-    Html.prototype.insert = function insert(value) {
-        var shell = this,
-            node = this.node,
-            parent = node.parentNode,
-            start = marker(node),
-            cursor = start;
+    Html.insert = function insert(node, value, start) {
+        start = start || marker(node);
+        var parent, cursor;
 
         unwrap(value);
 
-        return this;
+        return start;
 
         function unwrap(value) {
             if (value instanceof Function) {
-                shell.mixin(function insert() {
-                    return function insert(node) {
-                        unwrap(value());
-                    };
+                Html.exec(function insert() {
+                    unwrap(value());
                 });
             } else {
                 insert(value);
@@ -119,7 +114,7 @@ define('Html.insert', ['Html'], function (Html) {
         }
 
         function marker(el) {
-            return parent.insertBefore(document.createTextNode(""), el);
+            return el.parentNode.insertBefore(document.createTextNode(""), el);
         }
     };
 });

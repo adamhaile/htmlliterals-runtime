@@ -1,29 +1,29 @@
 describe("Html::class", function () {
     it("can toggle a class on or off based on a truthy value", function () {
-        var html = new Html("<input></input>");
+        var input = document.createElement("input");
 
-        html.mixin(function () { return Html.class("true", true); });
-        html.mixin(function () { return Html.class("false", false); });
-        html.mixin(function () { return Html.class("one", 1); });
-        html.mixin(function () { return Html.class("zero", 0); });
+        Html.class("true", true)(input);
+        Html.class("false", false)(input);
+        Html.class("one", 1)(input);
+        Html.class("zero", 0)(input);
 
-        expect(html.node.classList.contains("true")).toBe(true);
-        expect(html.node.classList.contains("false")).toBe(false);
-        expect(html.node.classList.contains("one")).toBe(true);
-        expect(html.node.classList.contains("zero")).toBe(false);
+        expect(input.classList.contains("true")).toBe(true);
+        expect(input.classList.contains("false")).toBe(false);
+        expect(input.classList.contains("one")).toBe(true);
+        expect(input.classList.contains("zero")).toBe(false);
     });
 
     it("can toggle between two classes based on a truthy value", function () {
-        var html = new Html("<input></input>");
+        var input = document.createElement("input");
 
         // on/off classes with static flag
-        html.mixin(function () { return Html.class("blech", "unblech", true); });
-        html.mixin(function () { return Html.class("garg", "ungarg", false); });
+        Html.class("blech", "unblech", true)(input);
+        Html.class("garg", "ungarg", false)(input);
 
-        expect(html.node.classList.contains("blech")).toBe(true);
-        expect(html.node.classList.contains("unblech")).toBe(false);
+        expect(input.classList.contains("blech")).toBe(true);
+        expect(input.classList.contains("unblech")).toBe(false);
 
-        expect(html.node.classList.contains("garg")).toBe(false);
-        expect(html.node.classList.contains("ungarg")).toBe(true);
+        expect(input.classList.contains("garg")).toBe(false);
+        expect(input.classList.contains("ungarg")).toBe(true);
     });
 })

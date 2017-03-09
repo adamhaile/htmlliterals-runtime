@@ -7,8 +7,6 @@ gulp.task('dist', function() {
     gulp.src([
         "src/_preamble.js",
         "src/domlib.js",
-        "src/parse.js",
-        "src/cachedParse.js",
         "src/Html.js",
         "src/insert.js",
         "src/mixins/*.js",

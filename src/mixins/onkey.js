@@ -1,4 +1,4 @@
-define('Html.onkey', ['Html'], function (Html) {
+define('Html.onkey', ['Html', 'domlib'], function (Html, domlib) {
     Html.onkey = function onkey(key, event, fn) {
         if (arguments.length < 3) fn = event, event = 'down';
 
@@ -13,8 +13,8 @@ define('Html.onkey', ['Html'], function (Html) {
             throw new Error("@Html.onkey: must supply a function to call when the key is entered");
             
         return function (node) {
-            Html.domlib.addEventListener(node, 'key' + event, onkeyListener);
-            Html.cleanup(node, function () { Html.domlib.removeEventListener(node, 'key' + event, onkeyListener); });
+            domlib.addEventListener(node, 'key' + event, onkeyListener);
+            Html.cleanup(node, function () { domlib.removeEventListener(node, 'key' + event, onkeyListener); });
         };
         
         function onkeyListener(e) {

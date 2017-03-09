@@ -1,5 +1,9 @@
-describe("Html::insert", function () {
-    var container = "<div>before<!-- insert -->after</div>";
+describe("Html::insert", function () { 
+    // <div>before<!-- insert -->after</div>
+    var container = document.createElement("div");
+    container.appendChild(document.createTextNode("before"));
+    container.appendChild(document.createComment(" insert "));
+    container.appendChild(document.createTextNode("after"));
 
     it("inserts nothing for null", function () {
         expect(insert(null).innerHTML)
@@ -12,13 +16,17 @@ describe("Html::insert", function () {
     });
 
     it("can insert a node", function () {
-        expect(insert(new Html("<span>foo</span>").node).innerHTML)
+        var node = document.createElement("span");
+        node.innerText = "foo";
+        expect(insert(node).innerHTML)
         .toBe("before<span>foo</span><!-- insert -->after");
     });
 
     it("can re-insert a node, thereby moving it", function () {
-        var node = new Html("<span>foo</span>").node,
-            first = insert(node),
+        var node = document.createElement("span");
+        node.innerText = "foo";
+
+        var first = insert(node),
             second = insert(node);
 
             expect(first.innerHTML)
@@ -28,13 +36,34 @@ describe("Html::insert", function () {
     });
 
     it("can insert a fragment", function () {
-        expect(insert(new Html("<span>foo</span>inside<span>bar</span>").node).innerHTML)
+        // <span>foo</span>inside<span>bar</span>
+        var frag = document.createDocumentFragment();
+        var span1 = document.createElement("span");
+        span1.innerText = "foo";
+        frag.appendChild(span1);
+        frag.appendChild(document.createTextNode("inside"));
+        var span2 = document.createElement("span");
+        span2.innerText = "bar";
+        frag.appendChild(span2);
+        frag.originalNodes = Array.prototype.slice.apply(frag.childNodes);
+
+        expect(insert(frag).innerHTML)
         .toBe("before<span>foo</span>inside<span>bar</span><!-- insert -->after");
     });
 
     it("can re-insert a fragment, thereby moving it", function () {
-        var frag = new Html("<span>foo</span>inside<span>bar</span>").node,
-            first = insert(frag),
+        // <span>foo</span>inside<span>bar</span>
+        var frag = document.createDocumentFragment();
+        var span1 = document.createElement("span");
+        span1.innerText = "foo";
+        frag.appendChild(span1);
+        frag.appendChild(document.createTextNode("inside"));
+        var span2 = document.createElement("span");
+        span2.innerText = "bar";
+        frag.appendChild(span2);
+        frag.originalNodes = Array.prototype.slice.apply(frag.childNodes);
+
+        var first = insert(frag),
             second = insert(frag);
 
             expect(first.innerHTML)
@@ -49,7 +78,10 @@ describe("Html::insert", function () {
     });
 
     it("can insert an array of nodes", function () {
-        expect(insert([new Html("<span>foo</span>").node, new Html("<div>bar</div>").node]).innerHTML)
+        var nodes = [ document.createElement("span"), document.createElement("div")];
+        nodes[0].innerText = "foo";
+        nodes[1].innerText = "bar";
+        expect(insert(nodes).innerHTML)
         .toBe("before<span>foo</span><div>bar</div><!-- insert -->after");
     });
 
@@ -60,12 +92,10 @@ describe("Html::insert", function () {
     });
 
     function insert(val) {
-        var html = new Html(container);
+        var html = container.cloneNode(true);
 
-        html.child([1], function (__) {
-            __[0].insert(function () { return val; });
-        })
+        Html.insert(html.childNodes[1], val, undefined);
 
-        return html.node;
+        return html;
     }
 });

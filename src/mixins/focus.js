@@ -1,4 +1,4 @@
-define('Html.focus', ['Html'], function (Html) {
+define('Html.focus', ['Html', 'domlib'], function (Html, domlib) {
     /**
      * In htmlliterals, directives run when a node is created, meaning before it has usually
      * been inserted into the document.  This causes a problem for the @focus directive, as only
@@ -49,7 +49,7 @@ define('Html.focus', ['Html'], function (Html) {
                 range.moveEnd('character', end);
                 range.moveStart('character', start);
                 range.select();
-            } else if (Html.domlib.isContentEditable(nodeToFocus) && nodeToFocus.childNodes.length > 0) {
+            } else if (domlib.isContentEditable(nodeToFocus) && nodeToFocus.childNodes.length > 0) {
                 range = document.createRange();
                 range.setStart(nodeToFocus.childNodes[0], start);
                 range.setEnd(nodeToFocus.childNodes[0], end);
