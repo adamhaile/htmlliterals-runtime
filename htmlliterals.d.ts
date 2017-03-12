@@ -207,7 +207,13 @@ declare global {
 			(e : T) : void;
 		}
 
-		interface DOMAttributes<T> {
+		interface SurplusAtributes<T> {
+			(node : T, state? : any) : any;
+			ref?: T;
+		}
+
+		interface DOMAttributes<T> extends SurplusAtributes<T> {
+
 			// Clipboard Events
 			onCopy?:         EventHandler<ClipboardEvent>;
 			onCopyCapture?:  EventHandler<ClipboardEvent>;
